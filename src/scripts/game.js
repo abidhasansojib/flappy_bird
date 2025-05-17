@@ -5,16 +5,21 @@ const GRAVITY = 0.3;
 const FLAP = -6;
 const BIRD_SIZE = 24;
 const PIPE_WIDTH = 50;
-const PIPE_GAP = 120;
-const PIPE_SPEED = 2;
+let PIPE_GAP = 200;      // Start easier (wider gap)
+let PIPE_SPEED = 1;    // Start slower
 
 let birdY = canvas.height / 2;
 let birdV = 0;
 let pipes = [];
 let score = 0;
 let gameOver = false;
+let highScore = Number(localStorage.getItem('flappyHighScore')) || 0;
 
 function resetGame() {
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flappyHighScore', highScore);
+    }
     birdY = canvas.height / 2;
     birdV = 0;
     pipes = [];
@@ -128,13 +133,23 @@ function drawPipes() {
 }
 
 function drawScore() {
-                       ctx.fillStyle = "#000"; // Black color for visibility
+    ctx.fillStyle = "#000";
     ctx.font = "24px Arial";
     ctx.textAlign = "left";
     ctx.fillText(`Score: ${score}`, 10, 30);
+    ctx.fillText(`High: ${highScore}`, 10, 60);
+}
+
+function updateDifficulty() {
+    // Increase speed and decrease gap as score increases
+    // Clamp values to keep game playable
+    PIPE_SPEED = Math.min(4, 1.5 + score * 0.05); // Max speed 4
+    PIPE_GAP = Math.max(80, 140 - score * 2);     // Min gap 80
 }
 
 function updatePipes() {
+    updateDifficulty(); // Add this line to adjust difficulty each frame
+
     if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 140) {
         const top = Math.random() * (canvas.height - PIPE_GAP - 80) + 40;
         pipes.push({ x: canvas.width, top });
@@ -177,24 +192,27 @@ function gameLoop() {
 
         if (checkCollision()) {
             gameOver = true;
+            // Update high score if needed
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('flappyHighScore', highScore);
+            }
         }
     }
 
     drawPipes();
     drawBird();
 
-          // Only show score and Game Over when game is over
+    // Always show score and high score
+    drawScore();
+
     if (gameOver) {
-        ctx.fillStyle = "#000"; // Black color for Game Over
+        ctx.fillStyle = "#000";
         ctx.font = "32px Arial";
         ctx.textAlign = "center";
         ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
         ctx.font = "20px Arial";
         ctx.fillText("Press Enter to restart", canvas.width / 2, canvas.height / 2 + 40);
-
-        // Show final score in black at top left
-        ctx.textAlign = "left";
-        drawScore();
     }
 
     // Draw ground
